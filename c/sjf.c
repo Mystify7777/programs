@@ -1,8 +1,8 @@
 #include <stdio.h>
 
 int main() {
-    int n, i;
-    int bt[20], wt[20], tat[20];
+    int n, i, j, pos, temp;
+    int bt[20], p[20], wt[20], tat[20]; 
     float avg_wt = 0, avg_tat = 0;
 
     printf("Enter the number of processes: ");
@@ -12,6 +12,24 @@ int main() {
     for (i = 0; i < n; i++) {
         printf("Process[%d]: ", i + 1);
         scanf("%d", &bt[i]);
+        p[i] = i + 1;
+    }
+
+    for (i = 0; i < n - 1; i++) {
+        pos = i;
+        for (j = i + 1; j < n; j++) {
+            if (bt[j] < bt[pos]) {
+                pos = j;
+            }
+        }
+
+        temp = bt[i];
+        bt[i] = bt[pos];
+        bt[pos] = temp;
+
+        temp = p[i];
+        p[i] = p[pos];
+        p[pos] = temp;
     }
 
     wt[0] = 0; 
@@ -30,7 +48,7 @@ int main() {
 
     printf("\nProcess\tBurst Time\tWaiting Time\tTurnaround Time\n");
     for (i = 0; i < n; i++) {
-        printf("P[%d]\t%d\t\t%d\t\t%d\n", i + 1, bt[i], wt[i], tat[i]);
+        printf("P[%d]\t%d\t\t%d\t\t%d\n", p[i], bt[i], wt[i], tat[i]);
     }
 
     printf("\nAverage Waiting Time: %.2f", avg_wt);
