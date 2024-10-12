@@ -104,4 +104,12 @@ public class Library {
             System.out.println(member);
         }
     }
+  // Getters for books and members
+    public List<Book> getBooks() {
+        return books;
+    }
+
+    public List<Member> getMembers() {
+        return members;
+    }
 }
