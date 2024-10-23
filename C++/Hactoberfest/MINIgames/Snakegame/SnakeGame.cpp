@@ -1,142 +1,130 @@
+#include <SFML/Graphics.hpp>
+#include <SFML/Window.hpp>
+#include <SFML/System.hpp>
 #include <iostream>
-#include <conio.h> // For getch()
-#include <windows.h> // For Sleep()
+#include <deque>
+#include <cstdlib>
+#include <ctime>
+
 using namespace std;
+using namespace sf;
 
-const int width = 20;
-const int height = 20;
-int x, y, fruitX, fruitY, score;
-int tailX[100], tailY[100]; // Arrays to store the snake's tail
-int nTail;
-enum eDirection { STOP = 0, LEFT, RIGHT, UP, DOWN };
-eDirection dir;
+const int WIDTH = 600;
+const int HEIGHT = 400;
+const int DOT_SIZE = 10;
+const int INITIAL_LENGTH = 3;
 
-void setup() {
-    dir = STOP; // Initial direction
-    x = width / 2; // Start position of the snake
-    y = height / 2;
-    fruitX = rand() % width; // Random fruit position
-    fruitY = rand() % height;
-    score = 0;
-    nTail = 0;
-}
+class SnakeGame {
+public:
+    SnakeGame() : window(VideoMode(WIDTH, HEIGHT), "Snake Game"), direction(Right), isGameOver(false) {
+        srand(static_cast<unsigned>(time(0)));
+        snake.push_front(Vector2i(WIDTH / 2, HEIGHT / 2));
+        spawnFruit();
+    }
 
-void draw() {
-    system("cls"); // Clear the console
-    for (int i = 0; i < width + 2; i++)
-        cout << "#"; // Top wall
-    cout << endl;
-
-    for (int i = 0; i < height; i++) {
-        for (int j = 0; j < width; j++) {
-            if (j == 0) cout << "#"; // Left wall
-            if (i == y && j == x)
-                cout << "O"; // Snake head
-            else if (i == fruitY && j == fruitX)
-                cout << "F"; // Fruit
-            else {
-                bool print = false;
-                for (int k = 0; k < nTail; k++) {
-                    if (tailX[k] == j && tailY[k] == i) {
-                        cout << "o"; // Snake tail
-                        print = true;
-                    }
-                }
-                if (!print) cout << " "; // Empty space
+    void run() {
+        while (window.isOpen()) {
+            processEvents();
+            if (!isGameOver) {
+                update();
             }
-            if (j == width - 1) cout << "#"; // Right wall
-        }
-        cout << endl;
-    }
-
-    for (int i = 0; i < width + 2; i++)
-        cout << "#"; // Bottom wall
-    cout << endl;
-    cout << "Score: " << score << endl;
-}
-
-void input() {
-    if (_kbhit()) {
-        switch (_getch()) {
-            case 'a':
-                dir = LEFT;
-                break;
-            case 'd':
-                dir = RIGHT;
-                break;
-            case 'w':
-                dir = UP;
-                break;
-            case 's':
-                dir = DOWN;
-                break;
-            case 'x':
-                dir = STOP; // Stop the game
-                break;
+            render();
         }
     }
-}
 
-void logic() {
-    int prevX = tailX[0]; // Previous position of the tail
-    int prevY = tailY[0];
-    int prev2X, prev2Y;
-    tailX[0] = x; // Update the position of the tail
-    tailY[0] = y;
+private:
+    enum Direction { Up, Down, Left, Right };
+    RenderWindow window;
+    deque<Vector2i> snake;
+    Direction direction;
+    Vector2i fruit;
+    bool isGameOver;
 
-    for (int i = 1; i < nTail; i++) {
-        prev2X = tailX[i]; // Save previous position
-        prev2Y = tailY[i];
-        tailX[i] = prevX; // Move the tail
-        tailY[i] = prevY;
-        prevX = prev2X; // Update the previous position
-        prevY = prev2Y;
+    void processEvents() {
+        Event event;
+        while (window.pollEvent(event)) {
+            if (event.type == Event::Closed)
+                window.close();
+            if (event.type == Event::KeyPressed) {
+                switch (event.key.code) {
+                    case Keyboard::Up:
+                        if (direction != Down) direction = Up; break;
+                    case Keyboard::Down:
+                        if (direction != Up) direction = Down; break;
+                    case Keyboard::Left:
+                        if (direction != Right) direction = Left; break;
+                    case Keyboard::Right:
+                        if (direction != Left) direction = Right; break;
+                    default: break;
+                }
+            }
+        }
     }
 
-    switch (dir) {
-        case LEFT:
-            x--;
-            break;
-        case RIGHT:
-            x++;
-            break;
-        case UP:
-            y--;
-            break;
-        case DOWN:
-            y++;
-            break;
-        default:
-            break;
+    void update() {
+        Vector2i newHead = snake.front();
+
+        switch (direction) {
+            case Up:    newHead.y -= DOT_SIZE; break;
+            case Down:  newHead.y += DOT_SIZE; break;
+            case Left:  newHead.x -= DOT_SIZE; break;
+            case Right: newHead.x += DOT_SIZE; break;
+        }
+
+        if (newHead.x < 0 || newHead.x >= WIDTH || newHead.y < 0 || newHead.y >= HEIGHT || 
+            find(snake.begin(), snake.end(), newHead) != snake.end()) {
+            isGameOver = true;
+            return;
+        }
+
+        snake.push_front(newHead);
+        if (newHead == fruit) {
+            spawnFruit();
+        } else {
+            snake.pop_back();
+        }
     }
 
-    // Check for fruit collision
-    if (x == fruitX && y == fruitY) {
-        score += 10; // Increase score
-        fruitX = rand() % width; // Generate new fruit
-        fruitY = rand() % height;
-        nTail++; // Increase tail length
+    void spawnFruit() {
+        int x = (rand() % (WIDTH / DOT_SIZE)) * DOT_SIZE;
+        int y = (rand() % (HEIGHT / DOT_SIZE)) * DOT_SIZE;
+        fruit = Vector2i(x, y);
     }
 
-    // Check for wall collision
-    if (x >= width) x = 0; else if (x < 0) x = width - 1;
-    if (y >= height) y = 0; else if (y < 0) y = height - 1;
+    void render() {
+        window.clear(Color::Black);
+        
+        // Draw the snake
+        for (const auto& segment : snake) {
+            RectangleShape rect(Vector2f(DOT_SIZE, DOT_SIZE));
+            rect.setFillColor(Color::Green);
+            rect.setPosition(segment.x, segment.y);
+            window.draw(rect);
+        }
 
-    // Check for tail collision
-    for (int i = 0; i < nTail; i++)
-        if (tailX[i] == x && tailY[i] == y)
-            dir = STOP; // End game on collision
-}
+        // Draw the fruit
+        RectangleShape fruitRect(Vector2f(DOT_SIZE, DOT_SIZE));
+        fruitRect.setFillColor(Color::Red);
+        fruitRect.setPosition(fruit.x, fruit.y);
+        window.draw(fruitRect);
+
+        if (isGameOver) {
+            Font font;
+            if (!font.loadFromFile("arial.ttf")) {
+                cout << "Could not load font!" << endl;
+            }
+            Text text("Game Over", font, 30);
+            text.setFillColor(Color::White);
+            text.setPosition(WIDTH / 2 - 70, HEIGHT / 2 - 15);
+            window.draw(text);
+        }
+
+        window.display();
+    }
+};
 
 int main() {
-    setup();
-    while (dir != STOP) {
-        draw();
-        input();
-        logic();
-        Sleep(100); // Control the speed of the game
-    }
-    system("pause"); // Add this line before returning from main()
-
+    SnakeGame game;
+    game.run();
     return 0;
 }
