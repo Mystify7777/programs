@@ -8,12 +8,13 @@ public class TicTacToeGUI extends JFrame implements ActionListener {
     private JButton[][] buttons = new JButton[3][3];
     private char currentPlayer = 'X';
     private boolean isAIEnabled = false;
+    private String difficulty = "Easy"; // Default difficulty
 
     public TicTacToeGUI() {
         setTitle("Tic Tac Toe");
-        setSize(300, 300);
+        setSize(400, 400);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setLayout(new GridLayout(4, 3));
+        setLayout(new GridLayout(4, 4));
 
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
@@ -32,6 +33,11 @@ public class TicTacToeGUI extends JFrame implements ActionListener {
         JButton aiButton = new JButton("Play AI");
         aiButton.addActionListener(e -> toggleAI());
         add(aiButton);
+
+        String[] difficulties = {"Easy", "Medium", "Hard"};
+        JComboBox<String> difficultySelector = new JComboBox<>(difficulties);
+        difficultySelector.addActionListener(e -> difficulty = (String) difficultySelector.getSelectedItem());
+        add(difficultySelector);
 
         setVisible(true);
     }
@@ -60,6 +66,34 @@ public class TicTacToeGUI extends JFrame implements ActionListener {
     }
 
     private void aiMove() {
+        if (difficulty.equals("Easy")) {
+            randomMove();
+        } else if (difficulty.equals("Medium")) {
+            if (!blockWinningMove('O') && !blockWinningMove('X')) {
+                randomMove();
+            }
+        } else if (difficulty.equals("Hard")) {
+            // Implement a basic AI strategy (could be more complex, like Minimax)
+            if (!blockWinningMove('O')) {
+                if (!blockWinningMove('X')) {
+                    randomMove();
+                }
+            }
+        }
+
+        // Check for a win or tie after AI move
+        if (checkWin()) {
+            JOptionPane.showMessageDialog(this, "Player " + currentPlayer + " wins!");
+            resetGame();
+        } else if (isBoardFull()) {
+            JOptionPane.showMessageDialog(this, "It's a tie!");
+            resetGame();
+        }
+
+        currentPlayer = 'X';  // Switch back to player
+    }
+
+    private void randomMove() {
         Random rand = new Random();
         int row, col;
         do {
@@ -68,36 +102,61 @@ public class TicTacToeGUI extends JFrame implements ActionListener {
         } while (!buttons[row][col].getText().equals(""));
 
         buttons[row][col].setText(String.valueOf(currentPlayer));
-        if (checkWin()) {
-            JOptionPane.showMessageDialog(this, "Player " + currentPlayer + " wins!");
-            resetGame();
-        } else if (isBoardFull()) {
-            JOptionPane.showMessageDialog(this, "It's a tie!");
-            resetGame();
+    }
+
+    private boolean blockWinningMove(char player) {
+        for (int i = 0; i < 3; i++) {
+            // Check rows and columns for a winning move
+            if (buttons[i][0].getText().equals(String.valueOf(player)) && 
+                buttons[i][1].getText().equals(String.valueOf(player)) && 
+                buttons[i][2].getText().equals("")) {
+                buttons[i][2].setText(String.valueOf(currentPlayer));
+                return true;
+            }
+            if (buttons[0][i].getText().equals(String.valueOf(player)) && 
+                buttons[1][i].getText().equals(String.valueOf(player)) && 
+                buttons[2][i].getText().equals("")) {
+                buttons[2][i].setText(String.valueOf(currentPlayer));
+                return true;
+            }
         }
-        currentPlayer = 'X';  // Switch back to player
+
+        // Check diagonals for a winning move
+        if (buttons[0][0].getText().equals(String.valueOf(player)) && 
+            buttons[1][1].getText().equals(String.valueOf(player)) && 
+            buttons[2][2].getText().equals("")) {
+            buttons[2][2].setText(String.valueOf(currentPlayer));
+            return true;
+        }
+        if (buttons[0][2].getText().equals(String.valueOf(player)) && 
+            buttons[1][1].getText().equals(String.valueOf(player)) && 
+            buttons[2][0].getText().equals("")) {
+            buttons[2][0].setText(String.valueOf(currentPlayer));
+            return true;
+        }
+        return false;
     }
 
     private boolean checkWin() {
         for (int i = 0; i < 3; i++) {
-            if (buttons[i][0].getText().equals(String.valueOf(currentPlayer)) &&
-                buttons[i][1].getText().equals(String.valueOf(currentPlayer)) &&
+            if (buttons[i][0].getText().equals(String.valueOf(currentPlayer)) && 
+                buttons[i][1].getText().equals(String.valueOf(currentPlayer)) && 
                 buttons[i][2].getText().equals(String.valueOf(currentPlayer))) {
                 return true;  // Check rows
             }
-            if (buttons[0][i].getText().equals(String.valueOf(currentPlayer)) &&
-                buttons[1][i].getText().equals(String.valueOf(currentPlayer)) &&
+            if (buttons[0][i].getText().equals(String.valueOf(currentPlayer)) && 
+                buttons[1][i].getText().equals(String.valueOf(currentPlayer)) && 
                 buttons[2][i].getText().equals(String.valueOf(currentPlayer))) {
                 return true;  // Check columns
             }
         }
-        if (buttons[0][0].getText().equals(String.valueOf(currentPlayer)) &&
-            buttons[1][1].getText().equals(String.valueOf(currentPlayer)) &&
+        if (buttons[0][0].getText().equals(String.valueOf(currentPlayer)) && 
+            buttons[1][1].getText().equals(String.valueOf(currentPlayer)) && 
             buttons[2][2].getText().equals(String.valueOf(currentPlayer))) {
             return true;  // Check diagonal
         }
-        if (buttons[0][2].getText().equals(String.valueOf(currentPlayer)) &&
-            buttons[1][1].getText().equals(String.valueOf(currentPlayer)) &&
+        if (buttons[0][2].getText().equals(String.valueOf(currentPlayer)) && 
+            buttons[1][1].getText().equals(String.valueOf(currentPlayer)) && 
             buttons[2][0].getText().equals(String.valueOf(currentPlayer))) {
             return true;  // Check anti-diagonal
         }
@@ -108,11 +167,11 @@ public class TicTacToeGUI extends JFrame implements ActionListener {
         for (int i = 0; i < 3; i++) {
             for (int j = 0; j < 3; j++) {
                 if (buttons[i][j].getText().equals("")) {
-                    return false;
+                    return false;  // Found an empty cell
                 }
             }
         }
-        return true;
+        return true;  // No empty cells left
     }
 
     private void resetGame() {
@@ -121,20 +180,16 @@ public class TicTacToeGUI extends JFrame implements ActionListener {
                 buttons[i][j].setText("");
             }
         }
-        currentPlayer = 'X';
+        currentPlayer = 'X';  // Reset to player X
     }
 
     private void toggleAI() {
-        isAIEnabled = !isAIEnabled;
-        if (isAIEnabled) {
-            JOptionPane.showMessageDialog(this, "AI mode enabled. Player O is the AI.");
-        } else {
-            JOptionPane.showMessageDialog(this, "AI mode disabled. Two players can now play.");
-        }
-        resetGame();
+        isAIEnabled = !isAIEnabled;  // Toggle AI mode
+        JOptionPane.showMessageDialog(this, isAIEnabled ? "AI Enabled" : "AI Disabled");
+        resetGame();  // Reset game on toggle
     }
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(TicTacToeGUI::new);
+        new TicTacToeGUI();
     }
 }
