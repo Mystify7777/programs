@@ -69,18 +69,13 @@ public class TicTacToeGUI extends JFrame implements ActionListener {
         if (difficulty.equals("Easy")) {
             randomMove();
         } else if (difficulty.equals("Medium")) {
-            if (!blockWinningMove('O') && !blockWinningMove('X')) {
+            if (!blockWinningMove('X')) { // Block player's winning move if needed
                 randomMove();
             }
         } else if (difficulty.equals("Hard")) {
-            // Implement a basic AI strategy (could be more complex, like Minimax)
-            if (!blockWinningMove('O')) {
-                if (!blockWinningMove('X')) {
-                    randomMove();
-                }
-            }
+            minimax('O'); // AI plays as 'O'
         }
-
+    
         // Check for a win or tie after AI move
         if (checkWin()) {
             JOptionPane.showMessageDialog(this, "Player " + currentPlayer + " wins!");
@@ -88,10 +83,70 @@ public class TicTacToeGUI extends JFrame implements ActionListener {
         } else if (isBoardFull()) {
             JOptionPane.showMessageDialog(this, "It's a tie!");
             resetGame();
+        } else {
+            currentPlayer = 'X'; // Switch back to player
         }
-
-        currentPlayer = 'X';  // Switch back to player
     }
+    
+    private void minimax(char player) {
+        int bestScore = (player == 'O') ? Integer.MIN_VALUE : Integer.MAX_VALUE;
+        int moveRow = -1, moveCol = -1;
+    
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                if (buttons[i][j].getText().equals("")) {
+                    buttons[i][j].setText(String.valueOf(player));
+                    int score = minimaxScore(player == 'O' ? 'X' : 'O');
+                    buttons[i][j].setText(""); // Undo the move
+    
+                    if (player == 'O' && score > bestScore) {
+                        bestScore = score;
+                        moveRow = i;
+                        moveCol = j;
+                    } else if (player == 'X' && score < bestScore) {
+                        bestScore = score;
+                        moveRow = i;
+                        moveCol = j;
+                    }
+                }
+            }
+        }
+    
+        if (moveRow != -1 && moveCol != -1) {
+            buttons[moveRow][moveCol].setText(String.valueOf('O')); // AI makes its move
+        }
+    }
+    
+    private int minimaxScore(char player) {
+        if (checkWin()) {
+            return (player == 'O') ? 1 : -1; // AI wins or loses
+        }
+        if (isBoardFull()) {
+            return 0; // Tie
+        }
+    
+        int bestScore = (player == 'O') ? Integer.MIN_VALUE : Integer.MAX_VALUE;
+    
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                if (buttons[i][j].getText().equals("")) {
+                    buttons[i][j].setText(String.valueOf(player));
+                    int score = minimaxScore(player == 'O' ? 'X' : 'O');
+                    buttons[i][j].setText(""); // Undo the move
+    
+                    if (player == 'O') {
+                        bestScore = Math.max(score, bestScore);
+                    } else {
+                        bestScore = Math.min(score, bestScore);
+                    }
+                }
+            }
+        }
+    
+        return bestScore;
+    }
+    
+    
 
     private void randomMove() {
         Random rand = new Random();
